@@ -5,6 +5,7 @@
 
 #define MAX_NOMBRE_POKEMON 30
 #define ERROR_PUNTERO 0
+#define FORMATO_LECTURA "%[^;];%i;%i;%i\n"
 
 struct _pokemon_t
 {
@@ -21,16 +22,11 @@ pokemon_t *pokemon_crear_desde_string(char *string)
 
 	if (pokemon_creado)
 	{
-		// pokemon_creado->nivel = -1;
-		// pokemon_creado->poder_ataque = -1;
-		// pokemon_creado->poder_defensa = -1;
-		// strcpy(pokemon_creado->nombre, "pepito");
 
-		sscanf(string, "%[^;];%i;%i;%i\n", pokemon_creado->nombre, &(pokemon_creado->nivel), &(pokemon_creado->poder_ataque), &(pokemon_creado->poder_defensa));
+		sscanf(string, FORMATO_LECTURA, pokemon_creado->nombre, &(pokemon_creado->nivel), &(pokemon_creado->poder_ataque), &(pokemon_creado->poder_defensa));
 		return pokemon_creado;
 	}
 
-	// printf("%s", string);
 	return NULL;
 }
 
