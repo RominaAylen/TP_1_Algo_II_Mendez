@@ -2,8 +2,9 @@
 #include "pokemon.h"
 #include <stdlib.h>
 
-struct _caja_t {
-	//definir la estructura de la caja
+struct _caja_t
+{
+	pokemon_t *pokemones_guardados;
 };
 
 caja_t *caja_cargar_archivo(const char *nombre_archivo)
