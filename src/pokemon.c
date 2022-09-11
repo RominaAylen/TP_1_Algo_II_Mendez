@@ -5,6 +5,7 @@
 
 #define MAX_NOMBRE_POKEMON 30
 #define ERROR_PUNTERO 0
+#define VALORES_A_LEER 4
 #define FORMATO_LECTURA "%[^;];%i;%i;%i\n"
 
 struct _pokemon_t
@@ -18,16 +19,26 @@ struct _pokemon_t
 pokemon_t *pokemon_crear_desde_string(char *string)
 {
 
-	pokemon_t *pokemon_creado = malloc(sizeof(pokemon_t));
-
-	if (pokemon_creado)
+	if (!string)
 	{
-
-		sscanf(string, FORMATO_LECTURA, pokemon_creado->nombre, &(pokemon_creado->nivel), &(pokemon_creado->poder_ataque), &(pokemon_creado->poder_defensa));
-		return pokemon_creado;
+		return NULL;
 	}
 
-	return NULL;
+	pokemon_t *pokemon_creado = malloc(sizeof(pokemon_t));
+
+	if (!pokemon_creado)
+	{
+		return NULL;
+	}
+
+	int leidos = sscanf(string, FORMATO_LECTURA, pokemon_creado->nombre, &(pokemon_creado->nivel), &(pokemon_creado->poder_ataque), &(pokemon_creado->poder_defensa));
+	if (leidos != VALORES_A_LEER)
+	{
+		free(pokemon_creado);
+		printf("Linea leida incompleta\n");
+		return NULL;
+	}
+	return pokemon_creado;
 }
 
 int pokemon_nivel(pokemon_t *pokemon)
