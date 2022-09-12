@@ -9,21 +9,10 @@
 #define NOMBRE_ARCHIVO_ENTRADA "prueba.csv"
 #define NOMBRE_ARCHIVO_SALIDA "nuevo.csv"
 #define MAX_NOMBRE_POKEMON 30
-
-struct _pokemon_t
-{
-	char nombre[MAX_NOMBRE_POKEMON];
-	int nivel;
-	int poder_ataque;
-	int poder_defensa;
-};
-
-struct _caja_t
-{
-	pokemon_t **pokemones_guardados;
-	int cantidad_pokemones_guardados;
-};
-
+/*
+ * imprime en pantalla la informacion del pokemon recibido por referencia
+ * o imprime "Puntero NULO" si el puntero no es valido
+ */
 void info_pokemon(pokemon_t *pokemon)
 {
 	if (!pokemon)
@@ -32,10 +21,11 @@ void info_pokemon(pokemon_t *pokemon)
 		return;
 	}
 
-	printf("Nombre pokemon: %s\n", pokemon->nombre);
-	printf("Nivel pokemon: %i\n", pokemon->nivel);
-	printf("Ataque pokemon: %i\n", pokemon->poder_ataque);
-	printf("Defensa pokemon: %i\n", pokemon->poder_defensa);
+	printf("-----\n");
+	printf("Nombre pokemon: %s\n", pokemon_nombre(pokemon));
+	printf("Nivel pokemon: %i\n", pokemon_nivel(pokemon));
+	printf("Ataque pokemon: %i\n", pokemon_ataque(pokemon));
+	printf("Defensa pokemon: %i\n", pokemon_defensa(pokemon));
 	printf("-----\n");
 }
 
@@ -71,7 +61,7 @@ int main(int argc, char *argv[])
 	int existosos = caja_recorrer(caja_creada, &info_pokemon);
 	printf("Pokemones Aplicados Exitosos: %i\n", existosos);
 
-	for (int i = 0; i < caja_creada->cantidad_pokemones_guardados; i++)
+	for (int i = 0; i < caja_cantidad(caja_creada); i++)
 	{
 		printf("i: %i\n", i);
 		pokemon_t *pokemon_0 = caja_obtener_pokemon(caja_creada, i);

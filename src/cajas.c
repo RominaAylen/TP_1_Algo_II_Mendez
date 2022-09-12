@@ -11,35 +11,59 @@
 #define LONGITUD_LINEA_LEIDA 40
 #define FORMATO_ESCRITURA "%s;%i;%i;%i\n"
 
-struct _pokemon_t
-{
-	char nombre[MAX_NOMBRE_POKEMON];
-	int nivel;
-	int poder_ataque;
-	int poder_defensa;
-};
-
 struct _caja_t
 {
 	pokemon_t **pokemones_guardados;
 	int cantidad_pokemones_guardados;
 };
 
-void ordenar_alfabeticamente_pokemones(pokemon_t **pokemones, int cantidad_pokemones)
+/*
+ * Ordena alfabeticamente los pokemones cuya direccion de memoria
+ * esta guardada en el vector dinamico de pokemones guardados de la caja recibida
+ *
+ * Si la direccion de memoria del vector es nulo, o algunos de las direcciones es nula
+ * o la cantidad de pokemones a ordenar es 0 la funcion no hace nada
+ */
+void ordenar_alfabeticamente_pokemones(caja_t *caja)
 {
 	int i, j;
 	pokemon_t *ptr_aux_pokemon = NULL;
-	for (i = 1; i < cantidad_pokemones; i++)
+	for (i = 1; i < caja_cantidad(caja); i++)
 	{
 		j = i;
-		ptr_aux_pokemon = pokemones[i];
-		while ((j > 0) && (strcmp(ptr_aux_pokemon->nombre, pokemones[j - 1]->nombre) < 0))
+		ptr_aux_pokemon = caja_obtener_pokemon(caja, i);
+		while ((j > 0) && (strcmp(pokemon_nombre(ptr_aux_pokemon), pokemon_nombre(caja->pokemones_guardados[j - 1])) < 0))
 		{
-			pokemones[j] = pokemones[j - 1];
+			caja->pokemones_guardados[j] = caja->pokemones_guardados[j - 1];
 			j--;
 		}
-		pokemones[j] = ptr_aux_pokemon;
+		caja->pokemones_guardados[j] = ptr_aux_pokemon;
 	}
+}
+
+/*
+ * Devuelve la direccion de memoria del primer elemento del vector dinamico correspondinte
+ * a los pokemones guardado en la caja
+ * si no, NULL
+ */
+pokemon_t **caja_obtener_pokemones(caja_t *caja)
+{
+	if (!caja || !(caja->pokemones_guardados))
+	{
+		return NULL;
+	}
+	return caja->pokemones_guardados;
+}
+
+/*
+ * Devuelve un nuevo espacio de memoria con un pokemon de datos identicos al pokemon recibido
+ * si no NULL
+ */
+pokemon_t *caja_copiar_pokemon(pokemon_t *pokemon)
+{
+	char linea[LONGITUD_LINEA_LEIDA] = " ";
+	sprintf(linea, "%s;%i;%i;%i\n", pokemon_nombre(pokemon), pokemon_nivel(pokemon), pokemon_ataque(pokemon), pokemon_defensa(pokemon));
+	return pokemon_crear_desde_string(linea);
 }
 
 caja_t *caja_cargar_archivo(const char *nombre_archivo)
@@ -91,7 +115,7 @@ caja_t *caja_cargar_archivo(const char *nombre_archivo)
 			return NULL;
 		};
 
-		pokemon_t **nuevos_pokemones = realloc(caja_nueva->pokemones_guardados, (unsigned long)(caja_nueva->cantidad_pokemones_guardados + 1) * sizeof(pokemon_t *));
+		pokemon_t **nuevos_pokemones = realloc(caja_obtener_pokemones(caja_nueva), (unsigned long)(caja_cantidad(caja_nueva) + 1) * sizeof(pokemon_t *));
 
 		if (!nuevos_pokemones)
 		{
@@ -101,14 +125,14 @@ caja_t *caja_cargar_archivo(const char *nombre_archivo)
 			return NULL;
 		}
 
-		nuevos_pokemones[caja_nueva->cantidad_pokemones_guardados] = puntero_pokemon_nuevo;
+		nuevos_pokemones[caja_cantidad(caja_nueva)] = puntero_pokemon_nuevo;
 		caja_nueva->cantidad_pokemones_guardados = caja_nueva->cantidad_pokemones_guardados + 1;
 		caja_nueva->pokemones_guardados = nuevos_pokemones;
 	};
 
 	fclose(t_entrada);
 
-	ordenar_alfabeticamente_pokemones(caja_nueva->pokemones_guardados, caja_nueva->cantidad_pokemones_guardados);
+	ordenar_alfabeticamente_pokemones(caja_nueva);
 
 	return caja_nueva;
 }
@@ -132,10 +156,10 @@ int caja_guardar_archivo(caja_t *caja, const char *nombre_archivo)
 
 	int i = 0;
 
-	while (i < caja->cantidad_pokemones_guardados)
+	while (i < caja_cantidad(caja))
 	{
-		pokemon_t *pokemon = caja->pokemones_guardados[i];
-		fprintf(t_salida, FORMATO_ESCRITURA, pokemon->nombre, pokemon->nivel, pokemon->poder_ataque, pokemon->poder_defensa);
+		pokemon_t *pokemon = caja_obtener_pokemon(caja, i);
+		fprintf(t_salida, FORMATO_ESCRITURA, pokemon_nombre(pokemon), pokemon_nivel(pokemon), pokemon_ataque(pokemon), pokemon_defensa(pokemon));
 		i++;
 		cantidad_pokemones_escritos++;
 	}
@@ -146,7 +170,7 @@ int caja_guardar_archivo(caja_t *caja, const char *nombre_archivo)
 
 caja_t *caja_combinar(caja_t *caja1, caja_t *caja2)
 {
-	if (!caja1 || !caja2 || (caja1->cantidad_pokemones_guardados < CAJA_VACIA) || caja2->cantidad_pokemones_guardados < CAJA_VACIA)
+	if (!caja1 || !caja2 || (caja_cantidad(caja1) < CAJA_VACIA) || caja_cantidad(caja2) < CAJA_VACIA)
 	{
 		return NULL;
 	}
@@ -157,30 +181,38 @@ caja_t *caja_combinar(caja_t *caja1, caja_t *caja2)
 		return NULL;
 	}
 
-	int cantidad_pokemones_guardados = caja1->cantidad_pokemones_guardados + caja2->cantidad_pokemones_guardados;
+	int cantidad_pokemones_guardados = caja_cantidad(caja1) + caja_cantidad(caja2);
 	pokemon_t **ptr_pokemones = malloc((long unsigned)cantidad_pokemones_guardados * sizeof(pokemon_t *));
 
 	int i = 0;
 
-	for (int j = 0; j < caja1->cantidad_pokemones_guardados; j++)
+	for (int j = 0; j < caja_cantidad(caja1); j++)
 	{
-		pokemon_t *pokemon = malloc((long unsigned)(i + 1) * sizeof(pokemon_t));
-		memcpy(pokemon, caja1->pokemones_guardados[j], sizeof(pokemon_t));
-		ptr_pokemones[i] = pokemon;
+		pokemon_t *aux_pokemon = caja_copiar_pokemon(caja_obtener_pokemon(caja1, j));
+		if (!aux_pokemon)
+		{
+			return NULL;
+		}
+
+		ptr_pokemones[i] = aux_pokemon;
 		i++;
 	}
 
-	for (int k = 0; k < caja2->cantidad_pokemones_guardados; k++)
+	for (int k = 0; k < caja_cantidad(caja2); k++)
 	{
-		pokemon_t *pokemon = malloc((long unsigned)(i + 1) * sizeof(pokemon_t));
-		memcpy(pokemon, caja2->pokemones_guardados[k], sizeof(pokemon_t));
-		ptr_pokemones[i] = pokemon;
+		pokemon_t *aux_pokemon = caja_copiar_pokemon(caja_obtener_pokemon(caja2, k));
+		if (!aux_pokemon)
+		{
+			return NULL;
+		}
+
+		ptr_pokemones[i] = aux_pokemon;
 		i++;
 	}
 
 	ptr_caja_combinada->pokemones_guardados = ptr_pokemones;
 	ptr_caja_combinada->cantidad_pokemones_guardados = cantidad_pokemones_guardados;
-	ordenar_alfabeticamente_pokemones(ptr_caja_combinada->pokemones_guardados, ptr_caja_combinada->cantidad_pokemones_guardados);
+	ordenar_alfabeticamente_pokemones(ptr_caja_combinada);
 	return ptr_caja_combinada;
 }
 
@@ -205,16 +237,16 @@ pokemon_t *caja_obtener_pokemon(caja_t *caja, int n)
 
 int caja_recorrer(caja_t *caja, void (*funcion)(pokemon_t *))
 {
-	if (!caja || !funcion || caja->cantidad_pokemones_guardados == CAJA_VACIA)
+	if (!caja || !funcion || caja_cantidad(caja) == CAJA_VACIA)
 	{
 		return ERROR;
 	}
 
 	int cantidad_de_pokemon_aplicados = 0;
 
-	for (int i = 0; i < caja->cantidad_pokemones_guardados; i++)
+	for (int i = 0; i < caja_cantidad(caja); i++)
 	{
-		funcion(caja->pokemones_guardados[i]);
+		funcion(caja_obtener_pokemon(caja, i));
 		cantidad_de_pokemon_aplicados++;
 	}
 	return cantidad_de_pokemon_aplicados;
@@ -225,7 +257,7 @@ void caja_destruir(caja_t *caja)
 	if (caja)
 	{
 		caja_recorrer(caja, &pokemon_destruir);
-		free(caja->pokemones_guardados);
+		free(caja_obtener_pokemones(caja));
 		free(caja);
 	}
 }
